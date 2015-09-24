@@ -1,7 +1,12 @@
 /// General AI implementations for adversarial games
 
 pub enum ActionError {
-    IllegalAction,
+    /// This move does not make sense on any board
+    InvalidMove,
+    /// This move makes sense but violates the rules of the game
+    IllegalMove,
+    /// This move is out of turn
+    WrongPlayer,
 }
 
 /// A Game State for use with the AI
@@ -23,6 +28,6 @@ pub trait State<P, A> {
 }
 
 /// A game state
-pub trait Game<S> where S: State {
+pub trait Game<S, P, A> where S: State<P, A> {
     fn initial_state(&self) -> S;
 }
