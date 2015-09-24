@@ -210,4 +210,50 @@ mod tests {
             assert_eq!(TicTacCell::Empty, t.board[i]);
         }
     }
+
+    #[test]
+    fn test_state_winner() {
+        let t = TicTacState::new_game();
+        assert_eq!(None, t.get_winner());
+
+        // test column win for O
+        for j in 0..3 {
+            let mut t = TicTacState::new_game();
+            for i in 0..3 {
+                t.board[i*3+j] = TicTacCell::O;
+            }
+            let winner = t.get_winner().unwrap();
+            assert_eq!(TicTacPlayer::O, winner);
+        }
+
+        // test column win for X
+        for j in 0..3 {
+            let mut t = TicTacState::new_game();
+            for i in 0..3 {
+                t.board[i*3+j] = TicTacCell::X;
+            }
+            let winner = t.get_winner().unwrap();
+            assert_eq!(TicTacPlayer::O, winner);
+        }
+
+        // test row win for O
+        for j in 0..3 {
+            let mut t = TicTacState::new_game();
+            for i in 0..3 {
+                t.board[j*3+i] = TicTacCell::O;
+            }
+            let winner = t.get_winner().unwrap();
+            assert_eq!(TicTacPlayer::O, winner);
+        }
+        
+        // test row win for X
+        for j in 0..3 {
+            let mut t = TicTacState::new_game();
+            for i in 0..3 {
+                t.board[j*3+i] = TicTacCell::X;
+            }
+            let winner = t.get_winner().unwrap();
+            assert_eq!(TicTacPlayer::X, winner);
+        }
+    }
 }
