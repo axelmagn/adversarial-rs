@@ -32,7 +32,7 @@ pub trait State<'a, P, A> : Sized {
     fn terminal(&self) -> bool;
 
     /// Perform a minimax search
-    fn minimax_search(&self) -> A {
+    fn minimax_search(&'a self) -> A {
         let mut best_action = None;
         let mut best_score = f64::MIN;
         for a in self.actions() {
@@ -43,31 +43,34 @@ pub trait State<'a, P, A> : Sized {
                 best_score = score;
             }
         }
-        best_action.unwrap();
+        best_action.unwrap()
     }
 
     /// Return the highest possible utility that can be achieved from this
     /// state
-    fn minimax_max_value(&self) -> f64 {
+    fn minimax_max_value(&'a self) -> f64 {
         if self.terminal() {
-            return self.utility(self.player);
+            return self.utility(self.player());
         }
         let mut v = f64::MIN;
         for a in self.actions() {
-            v = v.max(self.result(a).unwrap().minimax_min_value())
+            let s = self.result(a).unwrap();
+            v = v.max(s.minimax_min_value())
         }
+        v
     }
 
     /// Return the lowest possible utility that can be achieved from this state
-    fn minimax_min_value(&self) -> f64 {
+    fn minimax_min_value(&'a self) -> f64 {
         if self.terminal() {
-            return self.utility(self.player);
+            return self.utility(self.player());
         }
         let mut v = f64::MIN;
         for a in self.actions() {
-            v = v.min(self.result(a).unwrap().minimax_max_value())
+            let s = self.result(a).unwrap();
+            v = v.min(s.minimax_max_value())
         }
-
+        v
     }
 }
 
