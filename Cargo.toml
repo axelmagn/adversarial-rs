@@ -2,3 +2,9 @@
 name = "adversarial"
 version = "0.1.0"
 authors = ["Axel Magnuson <axelmagn@gmail.com>"]
+
+[profile.dev]
+debug = true
+
+[profile.test]
+debug = true

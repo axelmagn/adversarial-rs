@@ -50,20 +50,37 @@ pub struct TicTacAction {
 
 /// A tic tac toe game state
 #[derive(Copy,Clone,PartialEq,Eq,Debug)]
-pub struct TicTacState {
+pub struct TicTacState<'a> {
     /// The tic tac toe board
     pub board: [TicTacCell; 9],
     /// The player whose turn it is
     pub player: TicTacPlayer,
+    /// The predecessor state
+    pub parent: Option<&'a TicTacState<'a>>
 }
 
 
-impl TicTacState {
+impl<'a> TicTacState<'a> {
     /// Get the state for a new game
-    fn new_game() -> TicTacState {
+    fn new_game() -> TicTacState<'a> {
         TicTacState {
             board: [TicTacCell::Empty; 9],
             player: TicTacPlayer::X,
+            parent: None,
+        }
+    }
+
+    fn print(&self) {
+        for row in 0..3 {
+            for col in 0..3 {
+                let s = match self.board[row*3+col] {
+                    TicTacCell::X => "X",
+                    TicTacCell::O => "O",
+                    TicTacCell::Empty => " ",
+                };
+                print!("{}", s);
+            }
+            print!("\n");
         }
     }
 
@@ -71,7 +88,7 @@ impl TicTacState {
         // test columns
         for col in 0..3 {
             let first_cell = self.board[col];
-            if first_cell == TicTacCell::Empty { break; }
+            if first_cell == TicTacCell::Empty { continue; }
             let mut win = true;
             for row in 1..3 {
                 if self.board[row*3+col] != first_cell {
@@ -136,7 +153,7 @@ impl TicTacState {
 }
 
 
-impl State<TicTacPlayer, TicTacAction> for TicTacState {
+impl<'a> State<'a, TicTacPlayer, TicTacAction> for TicTacState<'a> {
     /// Get the player who can move in the state
     fn player(&self) -> TicTacPlayer { self.player }
 
@@ -159,7 +176,7 @@ impl State<TicTacPlayer, TicTacAction> for TicTacState {
     }
 
     /// Get the result an action in the state
-    fn result(&self, action: TicTacAction) -> Result<Self, ActionError> {
+    fn result(&'a self, action: TicTacAction) -> Result<Self, ActionError> {
         if action.player != self.player {
             return Err(ActionError::WrongPlayer);
         }
@@ -171,18 +188,23 @@ impl State<TicTacPlayer, TicTacAction> for TicTacState {
         }
         let mut out = self.clone();
         out.board[action.position] = action.player.cell();
+        out.player = match action.player {
+            TicTacPlayer::X => TicTacPlayer::O,
+            TicTacPlayer::O => TicTacPlayer::X,
+        };
+        out.parent = Some(&self);
         Ok(out)
     }
 
     /// Get the utility of the state
-    fn utility(&self, player: TicTacPlayer) -> i32 {
+    fn utility(&self, player: TicTacPlayer) -> f64 {
         match self.get_winner() {
-            None => 0,
+            None => 0.0,
             Some(winner) => {
                 if player == winner {
-                    1
+                    1.0
                 } else {
-                    -1
+                    -1.0
                 }
             },
         }
@@ -201,6 +223,7 @@ impl State<TicTacPlayer, TicTacAction> for TicTacState {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use ai::*;
 
     #[test]
     fn test_state_new_game() {
@@ -212,7 +235,7 @@ mod tests {
     }
 
     #[test]
-    fn test_state_winner() {
+    fn test_state_terminations() {
         let t = TicTacState::new_game();
         assert_eq!(None, t.get_winner());
 
@@ -224,6 +247,9 @@ mod tests {
             }
             let winner = t.get_winner().unwrap();
             assert_eq!(TicTacPlayer::O, winner);
+            assert_eq!(1.0,   t.utility(TicTacPlayer::O));
+            assert_eq!(-1.0,  t.utility(TicTacPlayer::X));
+            assert!(t.terminal());
         }
 
         // test column win for X
@@ -233,7 +259,10 @@ mod tests {
                 t.board[i*3+j] = TicTacCell::X;
             }
             let winner = t.get_winner().unwrap();
-            assert_eq!(TicTacPlayer::O, winner);
+            assert_eq!(TicTacPlayer::X, winner);
+            assert_eq!(1.0,   t.utility(TicTacPlayer::X));
+            assert_eq!(-1.0,  t.utility(TicTacPlayer::O));
+            assert!(t.terminal());
         }
 
         // test row win for O
@@ -244,6 +273,9 @@ mod tests {
             }
             let winner = t.get_winner().unwrap();
             assert_eq!(TicTacPlayer::O, winner);
+            assert_eq!(1.0,   t.utility(TicTacPlayer::O));
+            assert_eq!(-1.0,  t.utility(TicTacPlayer::X));
+            assert!(t.terminal());
         }
         
         // test row win for X
@@ -254,6 +286,69 @@ mod tests {
             }
             let winner = t.get_winner().unwrap();
             assert_eq!(TicTacPlayer::X, winner);
+            assert_eq!(1.0,   t.utility(TicTacPlayer::X));
+            assert_eq!(-1.0,  t.utility(TicTacPlayer::O));
+            assert!(t.terminal());
         }
+    }
+
+    #[test]
+    fn test_state_actions() {
+        // test that new board contains all actions
+        {
+            let t = TicTacState::new_game();
+            let actions = t.actions();
+            for i in 0..9 {
+                let ax = TicTacAction { position: i, player: TicTacPlayer::X, };
+                let ao = TicTacAction { position: i, player: TicTacPlayer::O, };
+                assert!(actions.contains(&ax));
+                assert!(!actions.contains(&ao));
+            }
+        }
+
+        // test that a board with a nonempty square does not contain an action
+        // there
+        for i in 0..9 {
+            let mut t = TicTacState::new_game();
+            t.board[i] = TicTacCell::X;
+            t.player = TicTacPlayer::O;
+            let actions = t.actions();
+            let ax = TicTacAction { position: i, player: TicTacPlayer::X, };
+            let ao = TicTacAction { position: i, player: TicTacPlayer::O, };
+            assert!(!actions.contains(&ax));
+            assert!(!actions.contains(&ao));
+        }
+    }
+
+    #[test]
+    fn test_state_result() {
+        let t0 = TicTacState::new_game();
+
+        let a1 = TicTacAction { position: 4, player: TicTacPlayer::X };
+        let t1 = t0.result(a1).unwrap();
+        assert_eq!(t1.board[4], TicTacCell::X);
+        assert_eq!(t1.player, TicTacPlayer::O);
+        
+        let a2 = TicTacAction { position: 0, player: TicTacPlayer::O };
+        let t2 = t1.result(a2).unwrap();
+        assert_eq!(t2.board[0], TicTacCell::O);
+        assert_eq!(t2.player, TicTacPlayer::X);
+
+        let a3 = TicTacAction { position: 3, player: TicTacPlayer::X };
+        let t3 = t2.result(a3).unwrap();
+        assert_eq!(t3.board[3], TicTacCell::X);
+        assert_eq!(t3.player, TicTacPlayer::O);
+
+        // test parents
+        let t3p = match t3.parent {
+            Some(p) => p,
+            None => panic!("Child state has no parent"),
+        };
+        assert_eq!(&t2, t3p);
+        let t2p = match t2.parent {
+            Some(p) => p,
+            None => panic!("Child state has no parent"),
+        };
+        assert_eq!(&t1, t2p);
     }
 }
