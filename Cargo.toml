@@ -8,3 +8,6 @@ debug = true
 
 [profile.test]
 debug = true
+
+[dependencies]
+rand = "0.3"

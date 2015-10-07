@@ -134,7 +134,7 @@ impl TicTacState {
         if first_cell != TicTacCell::Empty { 
             let mut win = true;
             for i in 1..3 {
-                if self.board[i*3+3-i] != first_cell {
+                if self.board[i*3+2-i] != first_cell {
                     win = false;
                     break;
                 }
@@ -298,6 +298,54 @@ mod tests {
             assert_eq!(-1.0,  t.utility(TicTacPlayer::O));
             assert!(t.terminal());
         }
+
+        // test diag win for O
+        {
+            let mut t = TicTacState::new_game();
+            for i in 0..3 {
+                t.board[i*3+i] = TicTacCell::O;
+            }
+            let winner = t.get_winner().unwrap();
+            assert_eq!(TicTacPlayer::O, winner);
+            assert_eq!(1.0,   t.utility(TicTacPlayer::O));
+            assert_eq!(-1.0,  t.utility(TicTacPlayer::X));
+            assert!(t.terminal());
+        }
+        {
+            let mut t = TicTacState::new_game();
+            for i in 0..3 {
+                t.board[i*3+2-i] = TicTacCell::O;
+            }
+            let winner = t.get_winner().unwrap();
+            assert_eq!(TicTacPlayer::O, winner);
+            assert_eq!(1.0,   t.utility(TicTacPlayer::O));
+            assert_eq!(-1.0,  t.utility(TicTacPlayer::X));
+            assert!(t.terminal());
+        }
+        // test diag win for O
+        {
+            let mut t = TicTacState::new_game();
+            for i in 0..3 {
+                t.board[i*3+i] = TicTacCell::X;
+            }
+            let winner = t.get_winner().unwrap();
+            assert_eq!(TicTacPlayer::X, winner);
+            assert_eq!(1.0,   t.utility(TicTacPlayer::X));
+            assert_eq!(-1.0,  t.utility(TicTacPlayer::O));
+            assert!(t.terminal());
+        }
+        {
+            let mut t = TicTacState::new_game();
+            for i in 0..3 {
+                t.board[i*3+2-i] = TicTacCell::X;
+            }
+            let winner = t.get_winner().unwrap();
+            assert_eq!(TicTacPlayer::X, winner);
+            assert_eq!(1.0,   t.utility(TicTacPlayer::X));
+            assert_eq!(-1.0,  t.utility(TicTacPlayer::O));
+            assert!(t.terminal());
+        }
+
     }
 
     #[test]
@@ -346,6 +394,7 @@ mod tests {
         let t3 = t2.result(a3).unwrap();
         assert_eq!(t3.board[3], TicTacCell::X);
         assert_eq!(t3.player, TicTacPlayer::O);
-        assert_eq!(&t1, t2p);
     }
+
+
 }
