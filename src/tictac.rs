@@ -1,7 +1,7 @@
 /// Tic Tac Toe Game definition
 
 
-use ai::{State, Game, ActionError};
+use ai::{State, ActionError};
 
 
 /// A single board cell

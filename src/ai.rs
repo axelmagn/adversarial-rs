@@ -60,33 +60,6 @@ pub trait State<P, A> : Sized where A: Copy {
         }
         v
     }
-
-    /// Return the highest possible utility that can be achieved from this
-    /// state
-    fn minimax_max_value(&self) -> f64 {
-        if self.terminal() {
-            return self.utility(self.player());
-        }
-        let mut v = f64::MIN;
-        for a in self.actions() {
-            let s = self.result(a).unwrap();
-            v = v.max(s.minimax_min_value());
-        }
-        v
-    }
-
-    /// Return the lowest possible utility that can be achieved from this state
-    fn minimax_min_value(&self) -> f64 {
-        if self.terminal() {
-            return self.utility(self.player());
-        }
-        let mut v = f64::MIN;
-        for a in self.actions() {
-            let s = self.result(a).unwrap();
-            v = v.min(s.minimax_max_value());
-        }
-        v
-    }
 }
 
 /// A game state
