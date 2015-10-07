@@ -2,7 +2,7 @@ extern crate adversarial;
 
 use adversarial::tictac::*;
 use adversarial::ai::*;
-use std::io::{self, Read};
+use std::io;
 
 fn main() {
     println!("Playing Tic Tac Toe");
