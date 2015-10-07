@@ -1,5 +1,6 @@
-use tictac::*;
-use ai::*;
+extern crate adversarial;
+use adversarial::tictac::*;
+use adversarial::ai::*;
 
 fn main() {
     let t = TicTacState::new_game();
@@ -9,7 +10,7 @@ fn main() {
     while !t.terminal() {
         t.print();
         print!("\n");
-        let best_action = t.minimax_search();
+        let best_action = t.minimax_search().unwrap();
         t = t.result(best_action).unwrap();
     }
     println!("Solution Found!");

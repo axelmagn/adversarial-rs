@@ -43,34 +43,31 @@ impl TicTacPlayer {
 /// A tic tac toe game state
 #[derive(Copy,Clone,PartialEq,Eq,Debug)]
 pub struct TicTacAction {
-    position: usize,
-    player: TicTacPlayer,
+    pub position: usize,
+    pub player: TicTacPlayer,
 }
 
 
 /// A tic tac toe game state
 #[derive(Copy,Clone,PartialEq,Eq,Debug)]
-pub struct TicTacState<'a> {
+pub struct TicTacState {
     /// The tic tac toe board
     pub board: [TicTacCell; 9],
     /// The player whose turn it is
     pub player: TicTacPlayer,
-    /// The predecessor state
-    pub parent: Option<&'a TicTacState<'a>>
 }
 
 
-impl<'a> TicTacState<'a> {
+impl TicTacState {
     /// Get the state for a new game
-    fn new_game() -> TicTacState<'a> {
+    pub fn new_game() -> TicTacState {
         TicTacState {
             board: [TicTacCell::Empty; 9],
             player: TicTacPlayer::X,
-            parent: None,
         }
     }
 
-    fn print(&self) {
+    pub fn print(&self) {
         for row in 0..3 {
             for col in 0..3 {
                 let s = match self.board[row*3+col] {
@@ -84,7 +81,7 @@ impl<'a> TicTacState<'a> {
         }
     }
 
-    fn get_winner(&self) -> Option<TicTacPlayer> {
+    pub fn get_winner(&self) -> Option<TicTacPlayer> {
         // test columns
         for col in 0..3 {
             let first_cell = self.board[col];
@@ -153,7 +150,7 @@ impl<'a> TicTacState<'a> {
 }
 
 
-impl<'a> State<'a, TicTacPlayer, TicTacAction> for TicTacState<'a> {
+impl State<TicTacPlayer, TicTacAction> for TicTacState {
     /// Get the player who can move in the state
     fn player(&self) -> TicTacPlayer { self.player }
 
@@ -176,7 +173,7 @@ impl<'a> State<'a, TicTacPlayer, TicTacAction> for TicTacState<'a> {
     }
 
     /// Get the result an action in the state
-    fn result(&'a self, action: TicTacAction) -> Result<Self, ActionError> {
+    fn result(&self, action: TicTacAction) -> Result<Self, ActionError> {
         if action.player != self.player {
             return Err(ActionError::WrongPlayer);
         }
@@ -192,7 +189,6 @@ impl<'a> State<'a, TicTacPlayer, TicTacAction> for TicTacState<'a> {
             TicTacPlayer::X => TicTacPlayer::O,
             TicTacPlayer::O => TicTacPlayer::X,
         };
-        out.parent = Some(&self);
         Ok(out)
     }
 
@@ -212,9 +208,21 @@ impl<'a> State<'a, TicTacPlayer, TicTacAction> for TicTacState<'a> {
 
     /// Return true if the state is terminal
     fn terminal(&self) -> bool {
-        match self.get_winner() {
-            None => false,
-            Some(_) => true,
+        let mut full = true;
+        for pos in 0..9 {
+            if self.board[pos] == TicTacCell::Empty {
+                full = false;
+                break;
+            }
+        }
+        // return
+        if full {
+            true
+        } else {
+            match self.get_winner() {
+                None => false,
+                Some(_) => true,
+            }
         }
     }
 }
@@ -338,17 +346,6 @@ mod tests {
         let t3 = t2.result(a3).unwrap();
         assert_eq!(t3.board[3], TicTacCell::X);
         assert_eq!(t3.player, TicTacPlayer::O);
-
-        // test parents
-        let t3p = match t3.parent {
-            Some(p) => p,
-            None => panic!("Child state has no parent"),
-        };
-        assert_eq!(&t2, t3p);
-        let t2p = match t2.parent {
-            Some(p) => p,
-            None => panic!("Child state has no parent"),
-        };
         assert_eq!(&t1, t2p);
     }
 }

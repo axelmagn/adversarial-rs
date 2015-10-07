@@ -1,2 +1,3 @@
-mod ai;
-mod tictac;
+pub mod ai;
+pub mod tictac;
+

@@ -15,7 +15,7 @@ pub enum ActionError {
 }
 
 /// A Game State for use with the AI
-pub trait State<'a, P, A> : Sized {
+pub trait State<P, A> : Sized where A: Copy {
     /// Get the player who can move in the state
     fn player(&self) -> P;
 
@@ -23,7 +23,7 @@ pub trait State<'a, P, A> : Sized {
     fn actions(&self) -> Vec<A>;
 
     /// Get the result an action in the state
-    fn result(&'a self, action: A) -> Result<Self, ActionError>;
+    fn result(&self, action: A) -> Result<Self, ActionError>;
 
     /// Get the utility of the state
     fn utility(&self, player: P) -> f64;
@@ -32,49 +32,64 @@ pub trait State<'a, P, A> : Sized {
     fn terminal(&self) -> bool;
 
     /// Perform a minimax search
-    fn minimax_search(&'a self) -> A {
+    fn minimax_search(&self) -> Option<A> {
         let mut best_action = None;
         let mut best_score = f64::MIN;
         for a in self.actions() {
             let candidate = self.result(a).unwrap(); 
-            let score = candidate.minimax_min_value();
+            let score = -candidate.minimax_value();
             if score > best_score {
                 best_action = Some(a);
                 best_score = score;
             }
         }
-        best_action.unwrap()
+        best_action
     }
 
-    /// Return the highest possible utility that can be achieved from this
-    /// state
-    fn minimax_max_value(&'a self) -> f64 {
+    /// Return the maximum value available from this state for the current
+    /// player, assuming alternating zero sum game and other player plays 
+    /// optimally
+    fn minimax_value(&self) -> f64 {
         if self.terminal() {
             return self.utility(self.player());
         }
         let mut v = f64::MIN;
         for a in self.actions() {
             let s = self.result(a).unwrap();
-            v = v.max(s.minimax_min_value())
+            v = v.max(-s.minimax_min_value());
+        }
+        v
+    }
+
+    /// Return the highest possible utility that can be achieved from this
+    /// state
+    fn minimax_max_value(&self) -> f64 {
+        if self.terminal() {
+            return self.utility(self.player());
+        }
+        let mut v = f64::MIN;
+        for a in self.actions() {
+            let s = self.result(a).unwrap();
+            v = v.max(s.minimax_min_value());
         }
         v
     }
 
     /// Return the lowest possible utility that can be achieved from this state
-    fn minimax_min_value(&'a self) -> f64 {
+    fn minimax_min_value(&self) -> f64 {
         if self.terminal() {
             return self.utility(self.player());
         }
         let mut v = f64::MIN;
         for a in self.actions() {
             let s = self.result(a).unwrap();
-            v = v.min(s.minimax_max_value())
+            v = v.min(s.minimax_max_value());
         }
         v
     }
 }
 
 /// A game state
-pub trait Game<'a, S, P, A> where S: State<'a, P, A> {
+pub trait Game<S, P, A> where S: State<P, A> {
     fn initial_state(&self) -> S;
 }
