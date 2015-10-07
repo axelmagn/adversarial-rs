@@ -56,7 +56,7 @@ pub trait State<P, A> : Sized where A: Copy {
         let mut v = f64::MIN;
         for a in self.actions() {
             let s = self.result(a).unwrap();
-            v = v.max(-s.minimax_min_value());
+            v = v.max(-s.minimax_value());
         }
         v
     }
