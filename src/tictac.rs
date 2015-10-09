@@ -67,18 +67,29 @@ impl TicTacState {
         }
     }
 
-    pub fn print(&self) {
+    pub fn show_board(&self) -> String {
+        let mut out = String::new();
         for row in 0..3 {
             for col in 0..3 {
                 let s = match self.board[row*3+col] {
-                    TicTacCell::X => "X",
-                    TicTacCell::O => "O",
-                    TicTacCell::Empty => " ",
+                    TicTacCell::X => 'X',
+                    TicTacCell::O => 'O',
+                    TicTacCell::Empty => ' ',
                 };
-                print!("{}", s);
+                out.push(s);
+                out.push('|');
             }
-            print!("\n");
+            out.pop();
+            out.push('\n');
+            out.push_str("-+-+-");
+            out.push('\n');
         }
+        out.truncate(6 * 5);
+        out
+    } 
+
+    pub fn print(&self) {
+        println!("{}", self.show_board());
     }
 
     pub fn get_winner(&self) -> Option<TicTacPlayer> {
